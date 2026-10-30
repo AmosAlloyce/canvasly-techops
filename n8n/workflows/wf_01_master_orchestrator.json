@@ -1,0 +1,46 @@
+{
+  "name": "Canvasly Master Omnichannel Ingest, Context Hydration & Groq AI Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "canvasly-ingest",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-ingest-01",
+      "name": "Webhook Ingest (Zendesk / OpsOS)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://opsos-app:4000/api/admin/curation-status",
+        "options": {}
+      },
+      "id": "http-admin-portal-02",
+      "name": "Hydrate Admin Portal & Curation Queue ETA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Ingest (Zendesk / OpsOS)": {
+      "main": [
+        [
+          {
+            "node": "Hydrate Admin Portal & Curation Queue ETA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

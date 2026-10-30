@@ -1,0 +1,61 @@
+{
+  "name": "WF-05: Enterprise 100+ Seat Onboarding Runbook Orchestrator (Fixes T-4823 NovaTech)",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook-onboarding",
+      "name": "Webhook: POST /webhook/enterprise-onboarding",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 280],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "enterprise-onboarding"
+      }
+    },
+    {
+      "id": "provision-sso-scim",
+      "name": "Task 1: Security Team — Okta SAML 2.0 & SCIM Provisioning",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 140],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/onboarding/provision-sso"
+      }
+    },
+    {
+      "id": "provision-custom-domain",
+      "name": "Task 2: Infra Team — Custom TLS & Vanity Domain (novatech.canvasly.io)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 280],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/onboarding/provision-domain"
+      }
+    },
+    {
+      "id": "provision-data-residency",
+      "name": "Task 3: Compliance Team — EU-Central (Frankfurt) Data Residency Pin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 420],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/onboarding/provision-residency"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: POST /webhook/enterprise-onboarding": {
+      "main": [
+        [
+          { "node": "Task 1: Security Team — Okta SAML 2.0 & SCIM Provisioning", "type": "main", "index": 0 },
+          { "node": "Task 2: Infra Team — Custom TLS & Vanity Domain (novatech.canvasly.io)", "type": "main", "index": 0 },
+          { "node": "Task 3: Compliance Team — EU-Central (Frankfurt) Data Residency Pin", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}

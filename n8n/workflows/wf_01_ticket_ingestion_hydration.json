@@ -1,0 +1,110 @@
+{
+  "name": "WF-01: Omnichannel Ticket Ingestion, Parallel Context Hydration & Groq LPU Triage",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook-ticket-created",
+      "name": "Webhook: POST /webhook/ticket-created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-created",
+        "responseMode": "onReceived"
+      }
+    },
+    {
+      "id": "redis-idempotency-check",
+      "name": "Redis 7: Idempotency Key & Dedup Lock",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [400, 300],
+      "parameters": {
+        "operation": "set",
+        "key": "=idem:ticket:{{$json.body.ticket_id}}",
+        "value": "={{$now}}",
+        "expire": true,
+        "ttl": 86400
+      }
+    },
+    {
+      "id": "http-salesforce-crm",
+      "name": "HTTP: Salesforce CRM Hydration (<45ms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 160],
+      "parameters": {
+        "method": "GET",
+        "url": "=http://opsos-app:4000/api/mock/salesforce/{{$json.body.account_name}}"
+      }
+    },
+    {
+      "id": "http-admin-portal",
+      "name": "HTTP: Admin Portal & Curation ETA (<55ms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=http://opsos-app:4000/api/mock/admin-portal/{{$json.body.account_name}}"
+      }
+    },
+    {
+      "id": "http-billing-policy",
+      "name": "HTTP: Stripe Billing & Codified Policy DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 440],
+      "parameters": {
+        "method": "GET",
+        "url": "http://opsos-app:4000/api/policies"
+      }
+    },
+    {
+      "id": "groq-lpu-triage",
+      "name": "Groq LPU (llama-3.3-70b-versatile): Semantic Triage + pgvector RAG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"llama-3.3-70b-versatile\", \"temperature\": 0.1, \"response_format\": {\"type\": \"json_object\"}}"
+      }
+    },
+    {
+      "id": "patch-ticket-context",
+      "name": "PATCH /api/tickets/:id (Push-Route & Attach Whisper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1160, 300],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://opsos-app:4000/api/tickets/{{$json.ticket_id}}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: POST /webhook/ticket-created": {
+      "main": [[{ "node": "Redis 7: Idempotency Key & Dedup Lock", "type": "main", "index": 0 }]]
+    },
+    "Redis 7: Idempotency Key & Dedup Lock": {
+      "main": [
+        [
+          { "node": "HTTP: Salesforce CRM Hydration (<45ms)", "type": "main", "index": 0 },
+          { "node": "HTTP: Admin Portal & Curation ETA (<55ms)", "type": "main", "index": 0 },
+          { "node": "HTTP: Stripe Billing & Codified Policy DB", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "HTTP: Admin Portal & Curation ETA (<55ms)": {
+      "main": [[{ "node": "Groq LPU (llama-3.3-70b-versatile): Semantic Triage + pgvector RAG", "type": "main", "index": 0 }]]
+    },
+    "Groq LPU (llama-3.3-70b-versatile): Semantic Triage + pgvector RAG": {
+      "main": [[{ "node": "PATCH /api/tickets/:id (Push-Route & Attach Whisper)", "type": "main", "index": 0 }]]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "WF-04: Billing 1-Click Atomic Duplicate Charge Refund & Audit Ledger",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook-billing-refund",
+      "name": "Webhook: POST /webhook/billing-refund",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 260],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "billing-refund"
+      }
+    },
+    {
+      "id": "verify-duplicate-charge",
+      "name": "HTTP: Verify Duplicate Stripe Invoice (T-4820 Beacon Financial)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [440, 260],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/mock/billing/refund"
+      }
+    },
+    {
+      "id": "postgres-audit-ledger",
+      "name": "PostgreSQL 16: Write Immutable Financial Audit Ledger",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [720, 260],
+      "parameters": {
+        "operation": "insert",
+        "table": "financial_audit_ledger"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: POST /webhook/billing-refund": {
+      "main": [[{ "node": "HTTP: Verify Duplicate Stripe Invoice (T-4820 Beacon Financial)", "type": "main", "index": 0 }]]
+    },
+    "HTTP: Verify Duplicate Stripe Invoice (T-4820 Beacon Financial)": {
+      "main": [[{ "node": "PostgreSQL 16: Write Immutable Financial Audit Ledger", "type": "main", "index": 0 }]]
+    }
+  }
+}

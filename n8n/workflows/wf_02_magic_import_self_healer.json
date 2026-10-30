@@ -1,0 +1,78 @@
+{
+  "name": "WF-02: Magic Import Auto-Triage, 504 Self-Healer & Curation Fast-Lane Router",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook-magic-import",
+      "name": "Webhook: POST /webhook/magic-import-triage",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "magic-import-triage"
+      }
+    },
+    {
+      "id": "inspect-upload-logs",
+      "name": "GET /api/admin/magic-import/logs/:account",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=http://opsos-app:4000/api/mock/admin-portal/{{$json.body.account_name}}"
+      }
+    },
+    {
+      "id": "switch-error-code",
+      "name": "Switch: Error Code & ARR Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [660, 300],
+      "parameters": {
+        "rules": [
+          { "value": "ERR_FILE_OVER_50MB", "output": 0 },
+          { "value": "ERR_BATCH_TIMEOUT_504", "output": 1 },
+          { "value": "ERR_LAYOUT_COMPLEXITY", "output": 2 }
+        ]
+      }
+    },
+    {
+      "id": "auto-retry-worker",
+      "name": "POST /api/admin/magic-import/retry (Isolated Worker + ENG-904 Cluster)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [940, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/admin/magic-import/retry"
+      }
+    },
+    {
+      "id": "enterprise-curation-fastlane",
+      "name": "Route $50K+ ARR to Enterprise Curation Fast-Lane (38m SLA vs 70h General)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [940, 460],
+      "parameters": {
+        "method": "POST",
+        "url": "http://opsos-app:4000/api/admin/curation-fastlane"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: POST /webhook/magic-import-triage": {
+      "main": [[{ "node": "GET /api/admin/magic-import/logs/:account", "type": "main", "index": 0 }]]
+    },
+    "GET /api/admin/magic-import/logs/:account": {
+      "main": [[{ "node": "Switch: Error Code & ARR Router", "type": "main", "index": 0 }]]
+    },
+    "Switch: Error Code & ARR Router": {
+      "main": [
+        [{ "node": "POST /api/admin/magic-import/retry (Isolated Worker + ENG-904 Cluster)", "type": "main", "index": 0 }],
+        [{ "node": "Route $50K+ ARR to Enterprise Curation Fast-Lane (38m SLA vs 70h General)", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

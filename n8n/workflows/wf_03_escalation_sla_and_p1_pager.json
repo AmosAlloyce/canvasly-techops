@@ -1,0 +1,70 @@
+{
+  "name": "WF-03: Stateful Escalation SLA Watchdog, Multi-Touch Save Desk & Ntfy P1 Pager",
+  "active": true,
+  "nodes": [
+    {
+      "id": "webhook-escalation",
+      "name": "Webhook: POST /webhook/escalation-watchdog",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "escalation-watchdog"
+      }
+    },
+    {
+      "id": "pg-friction-correlator",
+      "name": "PostgreSQL 16: 48h Account Friction Velocity Correlator",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [440, 220],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT count(*) as friction_48h FROM tickets WHERE account_name = $1 AND created_at >= NOW() - INTERVAL '48 hours';"
+      }
+    },
+    {
+      "id": "ntfy-p1-push",
+      "name": "Ntfy.sh: Push P1 Alert (http://ntfy:80/canvasly-p1-oncall)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 220],
+      "parameters": {
+        "method": "POST",
+        "url": "http://ntfy:80/canvasly-p1-oncall",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Priority", "value": "urgent" },
+            { "name": "Tags", "value": "rotating_light,lock" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sla-wait-15m",
+      "name": "Wait: 15-Minute Engineering Ack Watchdog (Fixes T-4805)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [720, 380],
+      "parameters": {
+        "amount": 15,
+        "unit": "minutes"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: POST /webhook/escalation-watchdog": {
+      "main": [
+        [
+          { "node": "PostgreSQL 16: 48h Account Friction Velocity Correlator", "type": "main", "index": 0 },
+          { "node": "Wait: 15-Minute Engineering Ack Watchdog (Fixes T-4805)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "PostgreSQL 16: 48h Account Friction Velocity Correlator": {
+      "main": [[{ "node": "Ntfy.sh: Push P1 Alert (http://ntfy:80/canvasly-p1-oncall)", "type": "main", "index": 0 }]]
+    }
+  }
+}
