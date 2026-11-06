@@ -20,9 +20,10 @@ import { DatadogCommandCenter } from './components/DatadogCommandCenter';
 import { AgentWorkspace } from './components/AgentWorkspace';
 import { CanvaslyStudio } from './components/CanvaslyStudio';
 import { WfmAndRoiConsole } from './components/WfmAndRoiConsole';
+import { CaseStudyInteractiveHub } from './components/CaseStudyInteractiveHub';
 
 export default function App() {
-  const [surface, setSurface] = useState<'home' | 'datadog' | 'agent' | 'canvas' | 'wfm'>('home');
+  const [surface, setSurface] = useState<'casestudy' | 'home' | 'datadog' | 'agent' | 'canvas' | 'wfm'>('casestudy');
   const [tickets, setTickets] = useState<TicketRecord[]>(INITIAL_TICKETS);
   const [selectedTicket, setSelectedTicket] = useState<TicketRecord>(INITIAL_TICKETS[23]);
   const [statusBannerActive, setStatusBannerActive] = useState<boolean>(true);
@@ -215,6 +216,16 @@ export default function App() {
     triggerBackendWebhook('canvas_studio_event', newT);
   };
 
+  // Render Interactive Case Study Hub by default
+  if (surface === 'casestudy') {
+    return (
+      <CaseStudyInteractiveHub
+        onNavigate={(nextView) => setSurface(nextView)}
+        onSelectTicketInAgent={(ticket) => setSelectedTicket(ticket)}
+      />
+    );
+  }
+
   // Render full-bleed Business Website when on Homepage
   if (surface === 'home') {
     return <BusinessHomePage onNavigate={(nextView) => setSurface(nextView)} />;
@@ -222,15 +233,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-zinc-100 flex flex-col">
-      {/* Sub-App Header Bar with Back to Business Website Link */}
+      {/* Sub-App Header Bar with Back to Case Study Hub Link */}
       <header className="h-[52px] bg-[#111621] border-b border-zinc-800 px-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSurface('casestudy')}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40 text-xs font-semibold text-sky-200 transition cursor-pointer"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-sky-400" />
+            <span>Case Study Solution Hub</span>
+          </button>
+
           <button
             onClick={() => setSurface('home')}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-medium text-zinc-200 transition cursor-pointer"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Canvasly.io Home</span>
+            <span>Canvasly.io Site</span>
           </button>
 
           <div className="h-4 w-[1px] bg-zinc-800" />

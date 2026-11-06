@@ -27,7 +27,7 @@ import {
 } from './InteractiveBusinessGlobe';
 
 interface BusinessHomePageProps {
-  onNavigate: (view: 'home' | 'canvas' | 'agent' | 'datadog' | 'wfm') => void;
+  onNavigate: (view: 'casestudy' | 'home' | 'canvas' | 'agent' | 'datadog' | 'wfm') => void;
 }
 
 export const BusinessHomePage: React.FC<BusinessHomePageProps> = ({ onNavigate }) => {
@@ -75,6 +75,12 @@ export const BusinessHomePage: React.FC<BusinessHomePageProps> = ({ onNavigate }
 
           {/* Right Actions */}
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => onNavigate('casestudy')}
+              className="rounded-lg border border-sky-400/50 bg-sky-500/20 px-3 py-2 font-mono text-xs font-semibold text-sky-200 transition hover:bg-sky-500/30 inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>← Case Study Solution Hub</span>
+            </button>
             <button
               onClick={() => onNavigate('datadog')}
               className="hidden rounded-lg border border-[#632CA6]/60 bg-[#632CA6]/20 px-3 py-2 font-mono text-xs font-medium text-purple-200 transition hover:bg-[#632CA6]/35 lg:inline-flex items-center gap-1.5 cursor-pointer"
